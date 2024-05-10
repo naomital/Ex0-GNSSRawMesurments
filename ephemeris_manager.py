@@ -9,6 +9,7 @@ import xarray
 import unlzw3
 import pandas as pd
 import numpy as np
+import simplekml
 
 
 class EphemerisManager():
@@ -66,11 +67,14 @@ class EphemerisManager():
 
         # data = pd.DataFrame(data_list[1:], columns = data_list[0])
         data = data_list[0]
+        # data2 = data_list[1]
+        # data = pd.concat([data1,data2])
+        # print(data['sv'].unique())
         # data = data.append(data_list, ignore_index=True)
 
         # data = pd.concat([data pd.DataFrame([data_list])], ignore_index=True)
         data.reset_index(inplace=True)
-        print(data.head(5))
+        # print(data.head(5))
         data.sort_values('time', inplace=True, ignore_index=True)
         self.data = data
 
@@ -111,6 +115,7 @@ class EphemerisManager():
         data['t_oc'] = pd.to_numeric(data['time'] - datetime(1980, 1, 6, 0, 0, 0))
         data['t_oc']  = 1e-9 * data['t_oc'] - WEEKSEC * np.floor(1e-9 * data['t_oc'] / WEEKSEC)
         data['time'] = data['time'].dt.tz_localize('UTC')
+
         data.rename(columns={'M0': 'M_0', 'Eccentricity': 'e', 'Toe': 't_oe', 'DeltaN': 'deltaN', 'Cuc': 'C_uc', 'Cus': 'C_us',
                              'Cic': 'C_ic', 'Crc': 'C_rc', 'Cis': 'C_is', 'Crs': 'C_rs', 'Io': 'i_0', 'Omega0': 'Omega_0'}, inplace=True)
         return data
@@ -228,5 +233,5 @@ class EphemerisManager():
 if __name__ == '__main__':
     repo = EphemerisManager()
     target_time = datetime(2024, 4, 13, 19, 51, 17, tzinfo=timezone.utc)
-    print(target_time)
+    # print(target_time)
     data = repo.get_ephemeris(target_time, ['G01', 'G03'])
