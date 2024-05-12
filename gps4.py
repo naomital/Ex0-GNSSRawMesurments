@@ -8,7 +8,6 @@ import simplekml
 
 from ephemeris_manager import EphemerisManager
 
-
 WEEKSEC = 604800
 LIGHTSPEED = 2.99792458e8
 transformer = pyproj.Transformer.from_crs(
@@ -153,7 +152,7 @@ def calculate_satellite_position(ephemeris, transmit_time):
 
 
 def least_squares_theres(xs, measured_pseudorange, x0, b0):
-    dx = 100*np.ones(3)
+    dx = 100 * np.ones(3)
     b = b0
     # set up the G matrix with the right dimensions. We will later replace the first 3 columns
     # note that b here is the clock bias in meters equivalent, so the actual clock bias is b/LIGHTSPEED
@@ -179,17 +178,14 @@ def least_squares_theres(xs, measured_pseudorange, x0, b0):
 
 
 def find_sat_location(filename, measurements):
-    mid_point = []
-    # manager = EphemerisManager(file.split('.')[0])
     manager = EphemerisManager(filename)
     df_mid_point = pd.DataFrame(
-        columns=['sat_name', 'UnixTime','GpsTimeNanos', 'tTxSeconds', 'Cn0DbHz', 'PrM', 'delt_sv', 'Epoch', 'x_sat', 'y_sat',
-                 'z_sat',])
+        columns=['sat_name', 'UnixTime', 'GpsTimeNanos', 'tTxSeconds', 'Cn0DbHz', 'PrM', 'delT_sv', 'Epoch', 'x_sat',
+                 'y_sat',
+                 'z_sat', ])
     for epoch in measurements['Epoch'].unique():
-        # one_epoch = measurements.loc[(measurements['Epoch'] == epoch) & (measurements['prSeconds'] < 0.1)]
         one_epoch = measurements.loc[(measurements['Epoch'] == epoch)]
         one_epoch = one_epoch.drop_duplicates(subset='SvName').set_index('SvName')
-        # if len(one_epoch.index) > 4:
         timestamp = one_epoch.iloc[0]['UnixTime'].to_pydatetime(warn=False)
         sats = one_epoch.index.unique().tolist()
         ephemeris = manager.get_ephemeris(timestamp, sats)
@@ -197,16 +193,14 @@ def find_sat_location(filename, measurements):
 
         combo = pd.concat([one_epoch, sv_position], axis=1).reindex()
         combo['sat_name'] = combo['Constellation'] + combo['Svid']
-        # print(combo.columns)
         small = combo[
-            ['sat_name', 'UnixTime','GpsTimeNanos', 'tTxSeconds', 'Cn0DbHz', 'PrM', 'delT_sv', 'Epoch', 'x_sat', 'y_sat', 'z_sat']]
-        df_mid_point = pd.concat([df_mid_point, small])
+            ['sat_name', 'UnixTime', 'GpsTimeNanos', 'tTxSeconds', 'Cn0DbHz', 'PrM', 'delT_sv', 'Epoch', 'x_sat',
+             'y_sat', 'z_sat']]
+        if len(df_mid_point) == 0:
+            df_mid_point = small
+        else:
+            df_mid_point = pd.concat([df_mid_point, small])
 
-    df_mid_point.rename(columns={"sat_name": "sat_name", "UnixTime": "UnixTime",'GpsTimeNanos':'GpsTimeNanos',
-                                 'tTxSeconds':'tTxSeconds','Cn0DbHz':'Cn0DbHz','PrM':'PrM',
-                                 'delT_sv':'delT_sv',"Epoch":"Epoch",  'x_sat': 'x_sat',
-                                 'y_sat':'y_sat', 'z_sat': 'z_sat'
-                                 })
     csv_file_name = filename + "_mid_point.csv"
     df_mid_point.to_csv(csv_file_name, index=False)
     return csv_file_name
@@ -214,28 +208,17 @@ def find_sat_location(filename, measurements):
 
 def find_earth_location_all(csv_file_name):
     measurements = pd.read_csv(csv_file_name)
-    gpsepoch = datetime(1980, 1, 6, 0, 0, 0)
-    measurements['time_stamp'] = pd.to_datetime(measurements['GpsTimeNanos'],utc=True, origin=gpsepoch)
-
-    ans = []
-    # manager = EphemerisManager(csv_file_name.split('.')[0])
+    df_ans = pd.DataFrame(
+        columns=['sat_name', 'UnixTime', 'GpsTimeNanos', 'tTxSeconds', 'Cn0DbHz', 'PrM', 'delT_sv', 'Epoch', 'x_sat',
+                 'y_sat', 'z_sat', 'pos_x', 'pos_y', 'pos_z', 'lat', 'lon', 'alt'])
     ecef_list = []
     b0 = 0
     x0 = np.array([0, 0, 0])
     for epoch in measurements['Epoch'].unique():
-        # one_epoch = measurements.loc[(measurements['Epoch'] == epoch) & (measurements['prSeconds'] < 0.1)]
         one_epoch = measurements.loc[(measurements['Epoch'] == epoch)]
-        one_epoch = one_epoch.drop_duplicates(subset='sat_name').set_index('sat_name')
+        one_epoch = one_epoch.drop_duplicates(subset='sat_name')
         if len(one_epoch.index) > 4:
-            timestamp = one_epoch.iloc[0]['time_stamp'].to_pydatetime(warn=False)
-            sats = one_epoch.index.unique().tolist()
-            # ephemeris = manager.get_ephemeris(timestamp, sats)
-            # sv_position = calculate_satellite_position(ephemeris, one_epoch['tTxSeconds'])
-
-            # xs = sv_position[['x_sat', 'y_sat', 'z_sat']].to_numpy()
             xs = one_epoch[['x_sat', 'y_sat', 'z_sat']].to_numpy()
-            # pr1 = one_epoch['PrM'] + LIGHTSPEED * sv_position['delT_sv']
-            # pr1 = pr1.to_numpy()
             pr = one_epoch['PrM'] + LIGHTSPEED * one_epoch['delT_sv']
             pr = pr.to_numpy()
 
@@ -246,27 +229,21 @@ def find_earth_location_all(csv_file_name):
             x0 = x
             ecef_list.append(x)
             lon, lat, alt = transformer.transform(x[0], x[1], x[2], radians=False)
-            for i in range(len(xs)):
-                row = []
-                row.append(sats[i])
-                row.append(timestamp)
-                row.append(xs[i][0])
-                row.append(xs[i][1])
-                row.append(xs[i][2])
-                row.append(lat)
-                row.append(lon)
-                row.append(alt)
-                ans.append(row)
+            one_epoch['pos_x'] = x[0]
+            one_epoch['pos_y'] = x[1]
+            one_epoch['pos_z'] = x[2]
+            one_epoch['lat'] = lat
+            one_epoch['lon'] = lon
+            one_epoch['alt'] = alt
+            df_ans = pd.concat([df_ans, one_epoch])
 
-    pd_ans = pd.DataFrame(ans,
-                          columns=['sat_name', 'time_stamp', 'sat_x', 'sat_y', 'sat_z', 'lat', 'lon', 'alt'])
-    short = pd_ans.drop_duplicates(['time_stamp'])
-
+    short = df_ans.drop_duplicates(['UnixTime'])
     kml = simplekml.Kml()
     for row, col in short.iterrows():
         kml.newpoint(name=str(row), coords=[(col['lon'], col['lat'])])
 
-    kml.save("Ariel_try4.kml")
+    kml.save("Ariel_try6.kml")
+    df_ans.to_csv(csv_file_name.split('.')[0] + "_answer.csv", index=False)
 
 
 def main():
