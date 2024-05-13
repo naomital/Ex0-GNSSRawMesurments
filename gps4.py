@@ -173,9 +173,24 @@ def least_squares_theres(xs, measured_pseudorange, x0, b0):
         db = sol[3]
         x0 = x0 + dx
         b0 = b0 + db
-    norm_dp = np.linalg.norm(deltaP)
-    return x0, b0, norm_dp
+    return x0, b0
 
+
+def least_squares_direction(xs, measured_pseudorange, x0, b0):
+    for _ in range(50):
+        error_best = np.linalg.norm(measured_pseudorange - np.linalg.norm(xs - x0, axis=1) + b0)
+        dx = error_best / 4
+        best_dx = np.array([0, 0, 0])
+        for dx_try in [(dx, 0, 0), (-dx, 0, 0), (0, dx, 0), (0, -dx, 0), (0, 0, dx), (0, 0, -dx)]:
+            error_try = np.linalg.norm(measured_pseudorange - np.linalg.norm(xs - (x0 + dx_try), axis=1) + b0)
+            if error_try < error_best:
+                error_best = error_try
+                best_dx = np.array(dx_try)
+        x0 += best_dx
+        b0 = error_best / 10
+        if np.linalg.norm(best_dx) <= 1e-3:
+            break
+    return x0, b0
 
 def find_sat_location(filename, measurements):
     manager = EphemerisManager(filename)
@@ -213,7 +228,7 @@ def find_earth_location_all(csv_file_name):
                  'y_sat', 'z_sat', 'pos_x', 'pos_y', 'pos_z', 'lat', 'lon', 'alt'])
     ecef_list = []
     b0 = 0
-    x0 = np.array([0, 0, 0])
+    x0 = np.array([0.0, 0.0, 0.0])
     for epoch in measurements['Epoch'].unique():
         one_epoch = measurements.loc[(measurements['Epoch'] == epoch)]
         one_epoch = one_epoch.drop_duplicates(subset='sat_name')
@@ -221,11 +236,12 @@ def find_earth_location_all(csv_file_name):
             xs = one_epoch[['x_sat', 'y_sat', 'z_sat']].to_numpy()
             pr = one_epoch['PrM'] + LIGHTSPEED * one_epoch['delT_sv']
             pr = pr.to_numpy()
-
-            if len(ecef_list) == 0:
-                x, b, dp = least_squares_theres(xs, pr, x0, b0)
-            else:
-                x, b, dp = least_squares_theres(xs, pr, x0, b0)
+            x, b = least_squares_direction(xs, pr, x0, b0)
+            # if len(ecef_list) == 0:
+            #     x, b = least_squares_theres(xs, pr, x0, b0)
+            # else:
+            #     x, b = least_squares_theres(xs, pr, x0, b0)
+            b0 = b
             x0 = x
             ecef_list.append(x)
             lon, lat, alt = transformer.transform(x[0], x[1], x[2], radians=False)
@@ -235,14 +251,19 @@ def find_earth_location_all(csv_file_name):
             one_epoch['lat'] = lat
             one_epoch['lon'] = lon
             one_epoch['alt'] = alt
-            df_ans = pd.concat([df_ans, one_epoch])
+
+            # df_ans = pd.concat([df_ans, one_epoch])
+            if len(df_ans) == 0:
+                df_ans = one_epoch
+            else:
+                df_ans = pd.concat([df_ans, one_epoch])
 
     short = df_ans.drop_duplicates(['UnixTime'])
     kml = simplekml.Kml()
     for row, col in short.iterrows():
         kml.newpoint(name=str(row), coords=[(col['lon'], col['lat'])])
 
-    kml.save("Ariel_try6.kml")
+    kml.save("Ariel_try1.kml")
     df_ans.to_csv(csv_file_name.split('.')[0] + "_answer.csv", index=False)
 
 
@@ -250,7 +271,9 @@ def main():
     # filename = "driving/gnss_log_2024_04_13_19_53_33.txt"
     # filename = "seattle/gnss_log_2020_12_02_17_19_39.txt"
     # filename = 'walking/gnss_log_2024_04_13_19_52_00.txt'
-    filename = 'Ariel/gnss_log_2024_05_07_11_01_10.txt'
+    # filename = 'Ariel/gnss_log_2024_05_07_23_54_09.txt'
+    # filename = 'Ariel/gnss_log_2024_05_05_17_47_43.txt'
+    filename = 'Ariel/gnss_log_2024_04_13_19_52_00.txt'
     # f = 'fixed/gnss_log_2024_04_13_19_51_17.txt'
     data = get_measurements(filename)
     csv_file_name = find_sat_location(filename.split('.')[0], data)
