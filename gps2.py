@@ -1,16 +1,14 @@
-import sys, os, csv
-
 from datetime import datetime, timezone, timedelta
+import sys
+import os
+import csv
+
+import simplekml
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import navpy
-import simplekml
-import polycircles
-from polycircles import polycircles
+import pyproj
 
 from ephemeris_manager import EphemerisManager
-import pyproj
 
 WEEKSEC = 604800
 LIGHTSPEED = 2.99792458e8
@@ -40,12 +38,15 @@ def get_measurements(file):
 
     # Format satellite IDs
     measurements.loc[measurements['Svid'].str.len() == 1, 'Svid'] = '0' + measurements['Svid']
+    print("'ConstellationType'] == '1'",measurements[measurements['ConstellationType'] == '1'])
+    print("'ConstellationType'] == '2'",measurements[measurements['ConstellationType'] == '2'])
+
     measurements.loc[measurements['ConstellationType'] == '1', 'Constellation'] = 'G'
     measurements.loc[measurements['ConstellationType'] == '3', 'Constellation'] = 'R'
     measurements['SvName'] = measurements['Constellation'] + measurements['Svid']
 
     # Remove all non-GPS measurements
-    measurements = measurements.loc[measurements['Constellation'] == 'G']
+    #measurements = measurements.loc[measurements['Constellation'] == 'G']
 
     # Convert columns to numeric representation
     measurements['Cn0DbHz'] = pd.to_numeric(measurements['Cn0DbHz'])
@@ -479,469 +480,11 @@ def earth_location2(sats, pr, x):
     return x, b0, norm_dp, avg_dist[-1]
 
 
-#
-# def least_squares1(xs, pr, x, b):
-#     # this function tries to find the location using only xyz
-#
-#     # i think b is the time dalay that is also not known
-#     if (x == np.array([0, 0, 0])).all():
-#         epoch = 100
-#     else:
-#         epoch = 40
-#     avg_dist = []
-#     count = 0
-#     m_best = np.inf
-#     avg_dist.append(m_best)
-#     while count < epoch:
-#         diffs = np.zeros(len(xs))
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x)
-#             diffs[i] = np.abs(pr[i] - d)
-#         m_best = np.abs(diffs.mean())
-#         if m_best < avg_dist[-1]:
-#             avg_dist.append(m_best)
-#
-#
-#         # we have baseline for this iteration
-#         # find which direction is best +- xyz
-#         # change that one
-#
-#         changes = []
-#         x2 = x.copy()
-#         x2[0] = x[0] + 1
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x2)
-#             diffs[i] = np.abs(pr[i] - d)
-#         m = diffs.mean()
-#         changes.append(('x', '+', m))
-#         x2 = x.copy()
-#         x2[0] = x[0] - 1
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x2)
-#             diffs[i] = np.abs(pr[i] - d)
-#         m = diffs.mean()
-#         changes.append(('x', '-', m))
-#         x2 = x.copy()
-#         x2[1] = x[1] + 1
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x2)
-#             diffs[i] = np.abs(pr[i] - d)
-#         m = diffs.mean()
-#         changes.append(('y', '+', m))
-#         x2 = x.copy()
-#         x2[1] = x[1] - 1
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x2)
-#             diffs[i] = np.abs(pr[i] - d)
-#         m = diffs.mean()
-#         changes.append(('y', '-', m))
-#         x2 = x.copy()
-#         x2[2] = x[2] + 1
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x2)
-#             diffs[i] = np.abs(pr[i] - d)
-#         m = diffs.mean()
-#         changes.append(('z', '+', m))
-#         x2 = x.copy()
-#         x2[2] = x[2] - 1
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x2)
-#             diffs[i] = np.abs(pr[i] - d)
-#         m = diffs.mean()
-#         changes.append(('z', '-', m))
-#
-#         changes = sorted(changes, key=lambda a: a[2])
-#         x2 = x.copy()
-#         if changes[0][1] == '+':
-#             if changes[0][0] == 'x':
-#                 x2[0] = x[0] + avg_dist[-1] / 2
-#                 for i in range(len(xs)):
-#                     d = calc_dist(xs[i], x2)
-#                     diffs[i] = np.abs(pr[i] - d)
-#                 m = diffs.mean()
-#             elif changes[0][0] == 'y':
-#                 x2[1] = x[1] + avg_dist[-1] / 2
-#                 for i in range(len(xs)):
-#                     d = calc_dist(xs[i], x2)
-#                     diffs[i] = np.abs(pr[i] - d)
-#                 m = diffs.mean()
-#             else:
-#                 x2[2] = x[2] + avg_dist[-1] / 2
-#                 for i in range(len(xs)):
-#                     d = calc_dist(xs[i], x2)
-#                     diffs[i] = np.abs(pr[i] - d)
-#                 m = diffs.mean()
-#         else:
-#             if changes[0][0] == 'x':
-#                 x2[0] = x[0] - avg_dist[-1] / 2
-#                 for i in range(len(xs)):
-#                     d = calc_dist(xs[i], x2)
-#                     diffs[i] = np.abs(pr[i] - d)
-#                 m = diffs.mean()
-#             elif changes[0][0] == 'y':
-#                 x2[1] = x[1] - avg_dist[-1] / 2
-#                 for i in range(len(xs)):
-#                     d = calc_dist(xs[i], x2)
-#                     diffs[i] = np.abs(pr[i] - d)
-#                 m = diffs.mean()
-#             else:
-#                 x2[2] = x[2] - avg_dist[-1] / 2
-#                 for i in range(len(xs)):
-#                     d = calc_dist(xs[i], x2)
-#                     diffs[i] = np.abs(pr[i] - d)
-#                 m = diffs.mean()
-#         if m < avg_dist[-1]:
-#             avg_dist.append(m)
-#             x = x2
-#
-#         count += 1
-#
-#     b0 = 0
-#     norm_dp = 0
-#
-#     return x, b0, norm_dp, avg_dist[-1]
-#
-#
-# def least_squares2(xs, pr, x, b, t):
-#     # this function tries to find the location using xyz and t but not sure if using t is wrong
-#     # i think b is the time dalay that is also not known
-#
-#     for i in range(len(t)):
-#         t[i] = t[i] / LIGHTSPEED
-#     if (x == np.array([0, 0, 0])).all():
-#         epoch = 200
-#     else:
-#         epoch = 40
-#     avg_dist = []
-#     count = 0
-#     change_by = 2
-#     didnt_change = 0
-#     m_best = np.inf
-#     avg_dist.append(m_best)
-#     while count < epoch:
-#         diffs = np.zeros(len(xs))
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x)
-#             d = d - t[i]
-#             diffs[i] = np.abs(pr[i] - d)
-#         m_best = np.abs(diffs.mean())
-#         if m_best < avg_dist[-1]:
-#             avg_dist.append(m_best)
-#         # we have baseline for this iteration
-#         # find which direction is best +- xyz
-#         # change that one
-#
-#         changes = []
-#         x2 = x.copy()
-#         x2[0] = x[0] + 1
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x2)
-#             d = d - t[i]
-#             diffs[i] = np.abs(pr[i] - d)
-#         m = diffs.mean()
-#         changes.append(('x', '+', m))
-#         x2 = x.copy()
-#         x2[0] = x[0] - 1
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x2)
-#             d = d - t[i]
-#             diffs[i] = np.abs(pr[i] - d)
-#         m = diffs.mean()
-#         changes.append(('x', '-', m))
-#         x2 = x.copy()
-#         x2[1] = x[1] + 1
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x2)
-#             d = d - t[i]
-#             diffs[i] = np.abs(pr[i] - d)
-#         m = diffs.mean()
-#         changes.append(('y', '+', m))
-#         x2 = x.copy()
-#         x2[1] = x[1] - 1
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x2)
-#             d = d - t[i]
-#             diffs[i] = np.abs(pr[i] - d)
-#         m = diffs.mean()
-#         changes.append(('y', '-', m))
-#         x2 = x.copy()
-#         x2[2] = x[2] + 1
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x2)
-#             d = d - t[i]
-#             diffs[i] = np.abs(pr[i] - d)
-#         m = diffs.mean()
-#         changes.append(('z', '+', m))
-#         x2 = x.copy()
-#         x2[2] = x[2] - 1
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x2)
-#             d = d - t[i]
-#             diffs[i] = np.abs(pr[i] - d)
-#         m = diffs.mean()
-#         changes.append(('z', '-', m))
-#
-#         changes = sorted(changes, key=lambda a: a[2])
-#
-#         x2 = x.copy()
-#         if changes[0][1] == '+':
-#             if changes[0][0] == 'x':
-#                 x2[0] = x[0] + avg_dist[-1] / change_by
-#                 for i in range(len(xs)):
-#                     d = calc_dist(xs[i], x2)
-#                     d = d - t[i]
-#                     diffs[i] = np.abs(pr[i] - d)
-#                 m = diffs.mean()
-#             elif changes[0][0] == 'y':
-#                 x2[1] = x[1] + avg_dist[-1] / change_by
-#                 for i in range(len(xs)):
-#                     d = calc_dist(xs[i], x2)
-#                     d = d - t[i]
-#                     diffs[i] = np.abs(pr[i] - d)
-#                 m = diffs.mean()
-#             else:
-#                 x2[2] = x[2] + avg_dist[-1] / change_by
-#                 for i in range(len(xs)):
-#                     d = calc_dist(xs[i], x2)
-#                     d = d - t[i]
-#                     diffs[i] = np.abs(pr[i] - d)
-#                 m = diffs.mean()
-#         else:
-#             if changes[0][0] == 'x':
-#                 x2[0] = x[0] - avg_dist[-1] / change_by
-#                 for i in range(len(xs)):
-#                     d = calc_dist(xs[i], x2)
-#                     d = d - t[i]
-#                     diffs[i] = np.abs(pr[i] - d)
-#                 m = diffs.mean()
-#             elif changes[0][0] == 'y':
-#                 x2[1] = x[1] - avg_dist[-1] / change_by
-#                 for i in range(len(xs)):
-#                     d = calc_dist(xs[i], x2)
-#                     d = d - t[i]
-#                     diffs[i] = np.abs(pr[i] - d)
-#                 m = diffs.mean()
-#             else:
-#                 x2[2] = x[2] - avg_dist[-1] / change_by
-#                 for i in range(len(xs)):
-#                     d = calc_dist(xs[i], x2)
-#                     d = d - t[i]
-#                     diffs[i] = np.abs(pr[i] - d)
-#                 m = diffs.mean()
-#         if m < avg_dist[-1]:
-#             avg_dist.append(m)
-#             didnt_change = 0
-#             x = x2
-#         else:
-#             didnt_change += 1
-#         if didnt_change == 5:
-#             change_by += 1
-#         count += 1
-#
-#     # print(avg_dist[-1])
-#     # print(x)
-#     # print(avg_dist)
-#     b0 = 0
-#     norm_dp = 0
-#     return x, b0, norm_dp, avg_dist[-1]
-#
-#
-# def get_rid_of_sat1(sats, pr, x, total_average):
-#     diffs = np.zeros(len(sats))
-#     for i in range(len(sats)):
-#         d = calc_dist(sats[i], x)
-#         diffs[i] = np.abs(pr[i] - d)
-#     farthest = []
-#     for i in range(len(diffs)):
-#         d = np.abs(diffs[i] - total_average)
-#         farthest.append((d, i))
-#     farthest = sorted(farthest, key=lambda a: a[0], reverse=True)
-#     sats = np.delete(sats, farthest[0][1], 0)
-#     pr = np.delete(pr, farthest[0][1])
-#     return sats, pr
-#
-# def get_rid_of_sat2(sats, pr, x, total_average):
-#     bigger=[]
-#     smaller=[]
-#     rows = []
-#     for i in range(len(sats)):
-#         d = calc_dist(sats[i], x)
-#         if d > total_average:
-#             bigger.append((d, i))
-#         else:
-#             smaller.append((d, i))
-#     if len(bigger)>=4 and len(smaller)>=4:
-#         print("making sat group smaller both big")
-#         if len(bigger)>len(smaller):
-#             for i in smaller:
-#                 rows.append(i[1])
-#         else:
-#             for i in bigger:
-#                 rows.append(i[1])
-#     elif len(bigger)>=4:
-#         print("making sat group smaller, big is big")
-#         for i in smaller:
-#             rows.append(i[1])
-#     elif len(smaller) >= 4:
-#         print("making sat group smaller small is big")
-#         for i in bigger:
-#             rows.append(i[1])
-#     sats = np.delete(sats, rows, 0)
-#     pr = np.delete(pr, rows)
-#     return sats, pr
-#
-# def get_rid_of_sat3(sats, pr, x, total_average):
-#     bigger = []
-#     smaller = []
-#     rows = []
-#     for i in range(len(sats)):
-#         d = calc_dist(sats[i], x)
-#         if d > total_average:
-#             bigger.append((d, i))
-#         else:
-#             smaller.append((d, i))
-#     if len(smaller) >= 4:
-#         print("making sat group smaller to small than avg group")
-#         for i in bigger:
-#             rows.append(i[1])
-#     sats = np.delete(sats, rows, 0)
-#     pr = np.delete(pr, rows)
-#     return sats, pr
-#
-# def least_squares3(xs, pr, x, b):
-#     # this function tries to find the location using only xyz
-#     # and cuts out satalites as we get closer
-#
-#     # i think b is the time dalay that is also not known
-#     if (x == np.array([0, 0, 0])).all():
-#         epoch = 100
-#         getrid = 25
-#     else:
-#         epoch = 40
-#         getrid = 10
-#     avg_dist = []
-#     count = 0
-#     orig = len(xs)
-#     threshold= 100000
-#     m_best = np.inf
-#     avg_dist.append(m_best)
-#
-#     while count < epoch:
-#         diffs = np.zeros(len(xs))
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x)
-#             diffs[i] = np.abs(pr[i] - d)
-#         m_best = np.abs(diffs.mean())
-#         if m_best < avg_dist[-1]:
-#             avg_dist.append(m_best)
-#
-#         # we have baseline for this iteration
-#         # find which direction is best +- xyz
-#         # change that one
-#         changes = []
-#         x2 = x.copy()
-#         x2[0] = x[0] + 1
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x2)
-#             diffs[i] = np.abs(pr[i] - d)
-#         m = diffs.mean()
-#         changes.append(('x', '+', m))
-#         x2 = x.copy()
-#         x2[0] = x[0] - 1
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x2)
-#             diffs[i] = np.abs(pr[i] - d)
-#         m = diffs.mean()
-#         changes.append(('x', '-', m))
-#         x2 = x.copy()
-#         x2[1] = x[1] + 1
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x2)
-#             diffs[i] = np.abs(pr[i] - d)
-#         m = diffs.mean()
-#         changes.append(('y', '+', m))
-#         x2 = x.copy()
-#         x2[1] = x[1] - 1
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x2)
-#             diffs[i] = np.abs(pr[i] - d)
-#         m = diffs.mean()
-#         changes.append(('y', '-', m))
-#         x2 = x.copy()
-#         x2[2] = x[2] + 1
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x2)
-#             diffs[i] = np.abs(pr[i] - d)
-#         m = diffs.mean()
-#         changes.append(('z', '+', m))
-#         x2 = x.copy()
-#         x2[2] = x[2] - 1
-#         for i in range(len(xs)):
-#             d = calc_dist(xs[i], x2)
-#             diffs[i] = np.abs(pr[i] - d)
-#         m = diffs.mean()
-#         changes.append(('z', '-', m))
-#
-#         changes = sorted(changes, key=lambda a: a[2])
-#         x2 = x.copy()
-#         if changes[0][1] == '+':
-#             if changes[0][0] == 'x':
-#                 x2[0] = x[0] + avg_dist[-1] / 2
-#                 for i in range(len(xs)):
-#                     d = calc_dist(xs[i], x2)
-#                     diffs[i] = np.abs(pr[i] - d)
-#                 m = diffs.mean()
-#             elif changes[0][0] == 'y':
-#                 x2[1] = x[1] + avg_dist[-1] / 2
-#                 for i in range(len(xs)):
-#                     d = calc_dist(xs[i], x2)
-#                     diffs[i] = np.abs(pr[i] - d)
-#                 m = diffs.mean()
-#             else:
-#                 x2[2] = x[2] + avg_dist[-1] / 2
-#                 for i in range(len(xs)):
-#                     d = calc_dist(xs[i], x2)
-#                     diffs[i] = np.abs(pr[i] - d)
-#                 m = diffs.mean()
-#         else:
-#             if changes[0][0] == 'x':
-#                 x2[0] = x[0] - avg_dist[-1] / 2
-#                 for i in range(len(xs)):
-#                     d = calc_dist(xs[i], x2)
-#                     diffs[i] = np.abs(pr[i] - d)
-#                 m = diffs.mean()
-#             elif changes[0][0] == 'y':
-#                 x2[1] = x[1] - avg_dist[-1] / 2
-#                 for i in range(len(xs)):
-#                     d = calc_dist(xs[i], x2)
-#                     diffs[i] = np.abs(pr[i] - d)
-#                 m = diffs.mean()
-#             else:
-#                 x2[2] = x[2] - avg_dist[-1] / 2
-#                 for i in range(len(xs)):
-#                     d = calc_dist(xs[i], x2)
-#                     diffs[i] = np.abs(pr[i] - d)
-#                 m = diffs.mean()
-#         if m < avg_dist[-1]:
-#             avg_dist.append(m)
-#             x = x2
-#
-#         count += 1
-#         if count % getrid == 0 and avg_dist[-1]<threshold:
-#             threshold/=10
-#             if len(xs) > 4:
-#                 # xs, pr = get_rid_of_sat1(xs, pr, x, avg_dist[-1])
-#                 xs, pr = get_rid_of_sat3(xs, pr, x, avg_dist[-1])
-#
-#     b0 = 0
-#     norm_dp = 0
-#     return x, b0, norm_dp, avg_dist[-1]
-
 def find_sat_location(file, measurements):
     mid_point = []
     manager = EphemerisManager(file.split('.')[0])
     df_mid_point = pd.DataFrame(
-        columns=['sat_name', 'UnixTime','GpsTimeNanos', 'tTxSeconds', 'Cn0DbHz', 'PrM', 'delt_sv', 'Epoch', 'x_sat', 'y_sat',
+        columns=['sat_name', 'UnixTime', 'GpsTimeNanos', 'tTxSeconds', 'Cn0DbHz', 'PrM', 'delt_sv', 'Epoch', 'x_sat', 'y_sat',
                  'z_sat',])
     for epoch in measurements['Epoch'].unique():
         # one_epoch = measurements.loc[(measurements['Epoch'] == epoch) & (measurements['prSeconds'] < 0.1)]
@@ -960,10 +503,10 @@ def find_sat_location(file, measurements):
             ['sat_name', 'UnixTime','GpsTimeNanos', 'tTxSeconds', 'Cn0DbHz', 'PrM', 'delT_sv', 'Epoch', 'x_sat', 'y_sat', 'z_sat']]
         df_mid_point = pd.concat([df_mid_point, small])
 
-    df_mid_point.rename(columns={"sat_name": "sat_name", "UnixTime": "UnixTime",'GpsTimeNanos':'GpsTimeNanos',
-                                 'tTxSeconds':'tTxSeconds','Cn0DbHz':'Cn0DbHz','PrM':'PrM',
-                                 'delT_sv':'delT_sv',"Epoch":"Epoch",  'x_sat': 'x_sat',
-                                 'y_sat':'y_sat', 'z_sat': 'z_sat'
+    df_mid_point.rename(columns={"sat_name": "sat_name", "UnixTime": "UnixTime", 'GpsTimeNanos': 'GpsTimeNanos',
+                                 'tTxSeconds': 'tTxSeconds', 'Cn0DbHz': 'Cn0DbHz', 'PrM': 'PrM',
+                                 'delT_sv': 'delT_sv', "Epoch": "Epoch",  'x_sat': 'x_sat',
+                                 'y_sat': 'y_sat', 'z_sat': 'z_sat'
                                  })
     name = file.split('.')[0] + "_mid_point.csv"
     df_mid_point.to_csv(name, index=False)
@@ -973,7 +516,7 @@ def find_sat_location(file, measurements):
 def find_earth_location_all(file):
     measurements = pd.read_csv(file)
     gpsepoch = datetime(1980, 1, 6, 0, 0, 0)
-    measurements['time_stamp'] = pd.to_datetime(measurements['GpsTimeNanos'],utc=True, origin=gpsepoch)
+    measurements['time_stamp'] = pd.to_datetime(measurements['GpsTimeNanos'], utc=True, origin=gpsepoch)
 
     # measurements = measurements.loc[50:]
 
@@ -1031,7 +574,7 @@ def find_earth_location_all(file):
                 row.append(lon)
                 row.append(alt)
                 # row.append(av)
-                row.append(0) # no av
+                row.append(0)  # no av
                 ans.append(row)
 
 
@@ -1123,7 +666,8 @@ def find_location(file, measurements):
 
 
 def main():
-    f = 'walking/gnss_log_2024_04_13_19_52_00.txt'
+    f = 'Driving/gnss_log_2024_04_13_19_53_33.txt'
+    #f = 'walking/gnss_log_2024_04_13_19_52_00.txt'
     # f = 'Ariel/gnss_log_2024_05_07_11_01_10.txt'
     # f = 'fixed/gnss_log_2024_04_13_19_51_17.txt'
     data = get_measurements(f)

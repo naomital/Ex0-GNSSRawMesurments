@@ -1,19 +1,33 @@
-from ftplib import FTP_TLS, FTP
-import ftplib
-import gzip
-import shutil
-import os
 from datetime import datetime, timedelta, timezone
+import os
+import gzip
+
+from ftplib import error_perm
+from ftplib import FTP_TLS, FTP
 import georinex
-import xarray
-import unlzw3
-import pandas as pd
 import numpy as np
+import pandas as pd
+import unlzw3
 import simplekml
+import shutil
+import xarray
 
 
 class EphemerisManager():
+    """
+    EphemerisManager is a class that retrieves and manages GNSS ephemeris data from NASA and IGS FTP servers.
+    The class is designed to retrieve ephemeris data for a specific timestamp and set of satellites.
+    The class will retrieve the most recent ephemeris data available for the given timestamp.
+    Ephemeris data is stored in the data attribute as a pandas DataFrame.
+
+    """
     def __init__(self, data_directory=os.path.join(os.getcwd(), 'data', 'ephemeris')):
+        """
+        Initializes the EphemerisManager object.
+        :param data_directory:
+            The directory where ephemeris data will be stored.
+        """
+
         self.data_directory = data_directory
         nasa_dir = os.path.join(data_directory, 'nasa')
         igs_dir = os.path.join(data_directory, 'igs')
@@ -22,7 +36,14 @@ class EphemerisManager():
         self.data = None
         self.leapseconds = None
 
-    def get_ephemeris(self, timestamp, satellites):
+    def get_ephemeris(self, timestamp, satellites) -> pd.DataFrame:
+        """
+        Retrieves ephemeris data for a specific timestamp and set of satellites.
+        :param satellites:
+            A list of satellite identifiers for which ephemeris data is requested.
+        :return:
+            A pandas DataFrame containing ephemeris data for the requested timestamp and satellites.
+        """
         systems = EphemerisManager.get_constellations(satellites)
         if not isinstance(self.data, pd.DataFrame):
             self.load_data(timestamp, systems)
@@ -38,6 +59,14 @@ class EphemerisManager():
         return self.leapseconds
 
     def load_data(self, timestamp, constellations=None):
+        """
+        Loads ephemeris data for a specific timestamp and set of constellations.
+        :param constellations:
+            A set of constellations for which ephemeris data is requested.
+            ephemeris
+        :return:
+            A pandas DataFrame containing ephemeris data for the requested timestamp and constellations.
+        """
         filepaths = EphemerisManager.get_filepaths(timestamp)
         data_list = []
         timestamp_age = datetime.now(timezone.utc) - timestamp
@@ -97,7 +126,7 @@ class EphemerisManager():
                 self.retrieve_file(url, directory, filename,
                                    dest_filepath, secure)
                 self.decompress_file(dest_filepath)
-            except ftplib.error_perm as err:
+            except error_perm as err:
                 print('ftp error')
                 return pd.DataFrame()
         if not self.leapseconds:
@@ -113,11 +142,22 @@ class EphemerisManager():
         data['source'] = decompressed_filename
         WEEKSEC = 604800
         data['t_oc'] = pd.to_numeric(data['time'] - datetime(1980, 1, 6, 0, 0, 0))
-        data['t_oc']  = 1e-9 * data['t_oc'] - WEEKSEC * np.floor(1e-9 * data['t_oc'] / WEEKSEC)
+        data['t_oc'] = 1e-9 * data['t_oc'] - WEEKSEC * np.floor(1e-9 * data['t_oc'] / WEEKSEC)
         data['time'] = data['time'].dt.tz_localize('UTC')
 
-        data.rename(columns={'M0': 'M_0', 'Eccentricity': 'e', 'Toe': 't_oe', 'DeltaN': 'deltaN', 'Cuc': 'C_uc', 'Cus': 'C_us',
-                             'Cic': 'C_ic', 'Crc': 'C_rc', 'Cis': 'C_is', 'Crs': 'C_rs', 'Io': 'i_0', 'Omega0': 'Omega_0'}, inplace=True)
+        data.rename(columns={'M0': 'M_0',
+                             'Eccentricity': 'e',
+                             'Toe': 't_oe',
+                             'DeltaN': 'deltaN',
+                             'Cuc': 'C_uc',
+                             'Cus': 'C_us',
+                             'Cic': 'C_ic',
+                             'Crc': 'C_rc',
+                             'Cis': 'C_is',
+                             'Crs': 'C_rs',
+                             'Io': 'i_0',
+                             'Omega0': 'Omega_0'
+                             }, inplace=True)
         return data
 
     @staticmethod
@@ -160,11 +200,11 @@ class EphemerisManager():
             with open(dest_filepath, 'wb') as handle:
                 ftp.retrbinary(
                     'RETR ' + src_filepath, handle.write)
-        except ftplib.error_perm as err:
+        except error_perm as err:
             print('Failed to retrieve ' + src_filepath + ' from ' + url)
             print(err)
             os.remove(dest_filepath)
-            raise ftplib.error_perm
+            raise error_perm
 
     def decompress_file(self, filepath):
         extension = os.path.splitext(filepath)[1]
@@ -233,5 +273,4 @@ class EphemerisManager():
 if __name__ == '__main__':
     repo = EphemerisManager()
     target_time = datetime(2024, 4, 13, 19, 51, 17, tzinfo=timezone.utc)
-    # print(target_time)
     data = repo.get_ephemeris(target_time, ['G01', 'G03'])
