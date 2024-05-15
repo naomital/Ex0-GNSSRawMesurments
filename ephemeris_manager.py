@@ -1,14 +1,15 @@
-from ftplib import FTP_TLS, FTP
+from datetime import datetime, timedelta, timezone
 import ftplib
 import gzip
-import shutil
 import os
-from datetime import datetime, timedelta, timezone
+import shutil
+
+from ftplib import FTP_TLS, FTP
 import georinex
-import xarray
-import unlzw3
-import pandas as pd
 import numpy as np
+import pandas as pd
+import unlzw3
+import xarray
 
 
 class EphemerisManager():
@@ -64,16 +65,9 @@ class EphemerisManager():
                     data_list.append(self.get_ephemeris_dataframe(
                         filepaths['bkg_daily_combined']))
 
-        # data = pd.DataFrame(data_list[1:], columns = data_list[0])
         data = data_list[0]
-        # data2 = data_list[1]
-        # data = pd.concat([data1,data2])
-        # print(data['sv'].unique())
-        # data = data.append(data_list, ignore_index=True)
-
-        # data = pd.concat([data pd.DataFrame([data_list])], ignore_index=True)
+ 
         data.reset_index(inplace=True)
-        # print(data.head(5))
         data.sort_values('time', inplace=True, ignore_index=True)
         self.data = data
 
@@ -232,5 +226,4 @@ class EphemerisManager():
 if __name__ == '__main__':
     repo = EphemerisManager()
     target_time = datetime(2024, 4, 13, 19, 51, 17, tzinfo=timezone.utc)
-    # print(target_time)
     data = repo.get_ephemeris(target_time, ['G01', 'G03'])
