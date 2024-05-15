@@ -38,9 +38,9 @@ The final csv has all of the above columns and pos_x, pos_y, pos_z, lat, lon, al
 
 ------------
 ### How to view the kml file
-One way i by using <a href="https://www.google.com/maps/d/">mymaps</a> whish is part of google maps.
+One way is by using <a href="https://www.google.com/maps/d/">mymaps</a> which is part of google maps.
 <br>Click on create a new map.
-<br>Click on import and browse, to choose the load the file.
+<br>Click on import and browse, to choose and load the file.
 
 
 Here are images of the locations from some of the log files that we used.
