@@ -176,16 +176,23 @@ def least_squares_theres(xs, measured_pseudorange, x0, b0):
     return x0, b0
 
 
+
+
 def least_squares_direction(xs, measured_pseudorange, x0, b0):
-    for _ in range(50):
+    change = 2
+    for _ in range(200):
+        changed = False
         error_best = np.linalg.norm(measured_pseudorange - np.linalg.norm(xs - x0, axis=1) + b0)
-        dx = error_best / 4
-        best_dx = np.array([0, 0, 0])
+        dx = error_best / change
+        best_dx = np.array([1, 1, 1])
         for dx_try in [(dx, 0, 0), (-dx, 0, 0), (0, dx, 0), (0, -dx, 0), (0, 0, dx), (0, 0, -dx)]:
             error_try = np.linalg.norm(measured_pseudorange - np.linalg.norm(xs - (x0 + dx_try), axis=1) + b0)
             if error_try < error_best:
                 error_best = error_try
                 best_dx = np.array(dx_try)
+                changed = True
+        if not changed:
+            change += 1
         x0 += best_dx
         b0 = error_best / 10
         if np.linalg.norm(best_dx) <= 1e-3:
@@ -237,10 +244,6 @@ def find_earth_location_all(csv_file_name):
             pr = one_epoch['PrM'] + LIGHTSPEED * one_epoch['delT_sv']
             pr = pr.to_numpy()
             x, b = least_squares_direction(xs, pr, x0, b0)
-            # if len(ecef_list) == 0:
-            #     x, b = least_squares_theres(xs, pr, x0, b0)
-            # else:
-            #     x, b = least_squares_theres(xs, pr, x0, b0)
             b0 = b
             x0 = x
             ecef_list.append(x)
@@ -252,7 +255,6 @@ def find_earth_location_all(csv_file_name):
             one_epoch['lon'] = lon
             one_epoch['alt'] = alt
 
-            # df_ans = pd.concat([df_ans, one_epoch])
             if len(df_ans) == 0:
                 df_ans = one_epoch
             else:
@@ -267,24 +269,23 @@ def find_earth_location_all(csv_file_name):
         kml_file_name = kml_file_name.replace('_mid_point', '')
     kml_file_name += '.kml'
     kml.save(kml_file_name)
-
-
     new_csv_file_name = csv_file_name.split('.')[0]
     if '_mid_point' in new_csv_file_name:
         new_csv_file_name = new_csv_file_name.replace('_mid_point', '')
-    new_csv_file_name+='_answer.csv'
+    new_csv_file_name += '_answer.csv'
 
     df_ans.to_csv(new_csv_file_name, index=False)
 
 
 def main():
-    filename = "driving/gnss_log_2024_04_13_19_53_33.txt"
+    # filename = "driving/gnss_log_2024_04_13_19_53_33.txt"
     # filename = "seattle/gnss_log_2020_12_02_17_19_39.txt"
     # filename = 'walking/gnss_log_2024_04_13_19_52_00.txt'
-    # filename = 'Ariel/gnss_log_2024_05_07_23_54_09.txt'
+    # filename = 'Ariel/gnss_log_2024_05_07_11_01_10.txt'
     # filename = 'Ariel/gnss_log_2024_05_05_17_47_43.txt'
     # filename = 'Ariel/gnss_log_2024_04_13_19_52_00.txt'
-    # f = 'fixed/gnss_log_2024_04_13_19_51_17.txt'
+    # filename = 'fixed/gnss_log_2024_04_13_19_51_17.txt'
+    filename = "Ariel/gnss_log_2024_05_07_23_54_09.txt"
     data = get_measurements(filename)
     csv_file_name = find_sat_location(filename.split('.')[0], data)
     find_earth_location_all(csv_file_name)
