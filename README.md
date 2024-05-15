@@ -1,21 +1,61 @@
-# Ex0-GNSSRawMeasurments
+# Autonomous Robotics -  Ex0: GNSS Raw Measurements
 
-In this assignment, we were asked to take the logs from the GnssLogger app and get the location of where the logs were taken from using the log's raw data. 
+This project implements a basic positioning algorithm based on Root Mean Square (RMS) of weighted pseudo-ranges for a given GNSS log file.
+
+### Purpose
+
+This Python code solves an assignment on the fundamentals of GNSS, including:
+
+- Understanding pseudo-ranges
+- Parsing GNSS raw measurement data into a CSV format
+- Implementing a least-squares positioning algorithm
+- Converting positions from ECEF coordinates to latitude, longitude, and altitude
+- Creating KML and CSV output files to visualize the path and calculated positions
+
+## How to Use
+
+### 1. Clone the repository:
+
+
+```sh
+git clone https://github.com/naomital/Ex0-GNSSRawMesurments.git
+```
+
+### 2. Install dependencies:
+This project requires the following Python libraries:
+
+- pandas
+- numpy
+- pyproj
+- simplekml
+
+> **NOTE**: check for the requirements versions in **requiremets.txt**
+
+You can install them using pip:
+```sh
+pip install pandas numpy pyproj simplekml matplotlib
+
+or
+
+pip install -r /path/to/requirements.txt
+```
+### 3. Select GNSS log file
+
+the log file need to be recorded on GnssLogger app from Google
 
 To read more about the app look <a href="https://developer.android.com/develop/sensors-and-location/sensors/gnss">here</a>.
 
-To download the app go to Google Play Store or Apple Store.
+To download the app go to <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.location.gps.gnsslogger">Google Play Store</a> or Apple Store.
 
-To run our code do the following:
+### 4.Run the script:
+The script is designed to work on desired log file 
+You can insert in the script in main() to use a file path.
 
-gitclone "" fill in later
-<br> run the following to make sure you have all the libraries needed
-<br> pip install -r /path/to/requirements.txt 
-to run:
-open 
-run the file "---" in the main change the filename to the log file you want
+Navigate to the root directory of the project and run:
 
------------------------------------------------
+```sh
+python rawMeasurementToGPS.py
+```
 ### About our code
 
 The majority of our code was taken from this <a href="https://www.johnsonmitchelld.com/2021/03/14/least-squares-gps.html">website</a> that we were refrenced to use 
@@ -32,16 +72,58 @@ For our code to run in the secound part we need to get a csv file with the follo
 
 The final csv has all of the above columns and pos_x, pos_y, pos_z, lat, lon, alt
 
------------------------------
-### About our enterative algorithm
+### About our iterative algorithm
 
-------------
+This function implements a basic iterative algorithm for least-squares direction finding. It takes several inputs:
+
+- `xs`: Positions of reference points (likely satellites).
+- `measured_pseudorange`: Measured distances to the reference points.
+- `x0`: Initial guess for the target position.
+- `b0`: Initial guess for a bias term.
+
+The algorithm works by:
+
+1. Calculating the initial error based on the difference between measured and predicted pseudoranges.
+2. It iterates 200 times (or until convergence) trying different small adjustments (dx) to the target position in each dimension (x, y, z).
+3. For each adjustment, it calculates a new error based on the updated position.
+4. It keeps the adjustment that leads to the lowest error and updates the target position and bias term accordingly.
+5. The process stops when the adjustments become very small (indicating convergence) or after a fixed number of iterations.
+
+**Essentially, it refines the target position and bias term iteratively to minimize the difference between measured and predicted distances to reference points.**
+
+
+> **NOTE**: This is a simplified explanation. The actual implementation uses techniques like line search and stopping criteria for better performance.
+
+
+
+
+
+## Output
+
+The script will generate two output files in the same directory as the input file:
+
+- \<filename>_answer.csv: This CSV file contains the original GNSS measurements with additional columns for the calculated X, Y, Z positions, latitude, longitude, and altitude.
+
+
+- \<filename>.kml: This KML file is a visualization of the calculated positions as a path. You can open this file with Google Earth or any other KML reader
+
 ### How to view the kml file
-One way i by using <a href="https://www.google.com/maps/d/">mymaps</a> whish is part of google maps.
+One way is by using Google <a href="https://www.google.com/maps/d/">MyMaps</a> whish is part of google maps.
 <br>Click on Create a new map.
 <br>Click on import and browse, to choose the load the file.
 
+### Output exaples:
+<img src="images/צילום מסך 2024-05-15 204840.png" width="325"> <img src="images/צילום מסך 2024-05-15 204926.png" width="325">
+<img src="images/צילום מסך 2024-05-15 205509.png" width="305"> <img src="images/צילום מסך 2024-05-15 205710.png" width="375">
+<img src="images/צילום מסך 2024-05-15 204957.png" width="485"> <img src="images/צילום מסך 2024-05-15 205429.png" width="132">
 
-Here are images of the locations from some of the log files that we used.
-<br> add pics
- 
+## Further Considerations
+
+This is a basic implementation and can be extended to include features like:
+
+- Filtering and weighting of pseudo-ranges based on signal quality
+- Integration with real-time GNSS data streams
+- Implementation of more advanced positioning algorithms
+
+We hope this helps! Feel free to reach out if you have any questions.
+

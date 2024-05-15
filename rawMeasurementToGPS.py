@@ -153,22 +153,13 @@ def calculate_satellite_position(ephemeris, transmit_time):
 
 def least_squares_theres(xs, measured_pseudorange, x0, b0):
     dx = 100 * np.ones(3)
-    b = b0
-    # set up the G matrix with the right dimensions. We will later replace the first 3 columns
-    # note that b here is the clock bias in meters equivalent, so the actual clock bias is b/LIGHTSPEED
     G = np.ones((measured_pseudorange.size, 4))
-    iterations = 0
     while np.linalg.norm(dx) > 1e-3:
-        # Eq. (2):
         r = np.linalg.norm(xs - x0, axis=1)
-        # Eq. (1):
         phat = r + b0
-        # Eq. (3):
         deltaP = measured_pseudorange - phat
         G[:, 0:3] = -(xs - x0) / r[:, None]
-        # Eq. (4):
         sol = np.linalg.inv(np.transpose(G) @ G) @ np.transpose(G) @ deltaP
-        # Eq. (5):
         dx = sol[0:3]
         db = sol[3]
         x0 = x0 + dx
@@ -192,7 +183,7 @@ def least_squares_direction(xs, measured_pseudorange, x0, b0):
         if not changed:
             change += 1
         x0 += best_dx
-        b0 = error_best / 10
+        b0 -= np.mean(measured_pseudorange - np.linalg.norm(xs - x0, axis=1) + b0)
         if np.linalg.norm(best_dx) <= 1e-3:
             break
     return x0, b0
@@ -220,8 +211,8 @@ def find_sat_location(filename, measurements):
             df_mid_point = small
         else:
             df_mid_point = pd.concat([df_mid_point, small])
-
-    csv_file_name = filename + "_mid_point.csv"
+    part2 = filename.split('/')[1]
+    csv_file_name = filename +"/" + part2 + "_mid_point.csv"
     df_mid_point.to_csv(csv_file_name, index=False)
     return csv_file_name
 
@@ -241,6 +232,7 @@ def find_earth_location_all(csv_file_name):
             xs = one_epoch[['x_sat', 'y_sat', 'z_sat']].to_numpy()
             pr = one_epoch['PrM'] + LIGHTSPEED * one_epoch['delT_sv']
             pr = pr.to_numpy()
+            # x, b = least_squares_theres(xs, pr, x0, b0)
             x, b = least_squares_direction(xs, pr, x0, b0)
             b0 = b
             x0 = x
@@ -276,7 +268,7 @@ def find_earth_location_all(csv_file_name):
 
 
 def main():
-    filename = ''
+    filename = 'samples/gnss_log_2024_04_13_19_53_33.txt'
     data = get_measurements(filename)
     csv_file_name = find_sat_location(filename.split('.')[0], data)
     find_earth_location_all(csv_file_name)
