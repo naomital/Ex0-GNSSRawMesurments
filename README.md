@@ -56,7 +56,7 @@ and its corisponding <a href="https://www.johnsonmitchelld.com/2021/03/14/least-
 <br>The second is a kml file with the one location per second.
 
 For our code to run in the secound part we need to get a csv file with the following columns:
-<br> sat_name, UnixTime, GpsTimeNanos, tTxSeconds, Cn0DbHz, PrM, delT_sv, Epoch, x_sat, y_sat, z_sat
+<br> **sat_name, UnixTime, GpsTimeNanos, tTxSeconds, Cn0DbHz, PrM, delT_sv, Epoch, x_sat, y_sat, z_sat** 
 
 The final csv has all of the above columns and pos_x, pos_y, pos_z, lat, lon, alt
 
