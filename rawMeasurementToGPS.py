@@ -268,7 +268,7 @@ def find_earth_location_all(csv_file_name):
 
 
 def main():
-    filename = 'samples/gnss_log_2024_04_13_19_53_33.txt'
+    filename = " ADD YOURS GNSS FILE IN TXT FORM" # for example: 'samples/gnss_log_2024_04_13_19_53_33.txt'
     data = get_measurements(filename)
     csv_file_name = find_sat_location(filename.split('.')[0], data)
     find_earth_location_all(csv_file_name)
