@@ -12,8 +12,8 @@ gitclone "" fill in later
 <br> run the following to make sure you have all the libraries needed
 <br> pip install -r /path/to/requirements.txt 
 to run:
-open 
-run the file "---" in the main change the filename to the log file you want
+<br> open the file "rawMeasurmentToGPS" 
+<br> in the main function fill in the filename to the log file you want
 
 -----------------------------------------------
 ### About our code
@@ -43,5 +43,5 @@ One way i by using <a href="https://www.google.com/maps/d/">mymaps</a> whish is 
 
 
 Here are images of the locations from some of the log files that we used.
-<br> add pics
+![Alt text](image link)
  
