@@ -17,15 +17,16 @@ This Python code solves an assignment on the fundamentals of GNSS, including:
 
 ### 2. Install dependencies:
 This project requires the following Python libraries:
-
+```sh
 ﻿numpy==1.23.5
 pandas==2.0.3
 pyproj==3.6.1
 simplekml==1.3.6
 
+```
 > **NOTE**: check **requiremets.txt**
 
-```
+
 ### 3. Select GNSS log file
 
 the log file need to be recorded on GnssLogger app from Google
