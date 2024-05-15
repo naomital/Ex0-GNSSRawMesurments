@@ -11,6 +11,9 @@ To run our code do the following:
 gitclone "" fill in later
 <br> run the following to make sure you have all the libraries needed
 <br> pip install -r /path/to/requirements.txt 
+to run:
+open 
+run the file "---" in the main change the filename to the log file you want
 
 -----------------------------------------------
 ### About our code
