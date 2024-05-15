@@ -14,30 +14,17 @@ This Python code solves an assignment on the fundamentals of GNSS, including:
 
 ## How to Use
 
-### 1. Clone the repository:
-
-
-```sh
-git clone https://github.com/naomital/Ex0-GNSSRawMesurments.git
-```
 
 ### 2. Install dependencies:
 This project requires the following Python libraries:
 
-- pandas
-- numpy
-- pyproj
-- simplekml
+﻿numpy==1.23.5
+pandas==2.0.3
+pyproj==3.6.1
+simplekml==1.3.6
 
-> **NOTE**: check for the requirements versions in **requiremets.txt**
+> **NOTE**: check **requiremets.txt**
 
-You can install them using pip:
-```sh
-pip install pandas numpy pyproj simplekml matplotlib
-
-or
-
-pip install -r /path/to/requirements.txt
 ```
 ### 3. Select GNSS log file
 
