@@ -29,7 +29,7 @@ simplekml==1.3.6
 
 ### 3. Select GNSS log file
 
-the log file need to be recorded on GnssLogger app from Google
+The log file needs to be recorded on GnssLogger app from Google
 
 To read more about the app look <a href="https://developer.android.com/develop/sensors-and-location/sensors/gnss">here</a>.
 
@@ -47,15 +47,15 @@ python rawMeasurementToGPS.py
 ### About our code
 
 The majority of our code was taken from this <a href="https://www.johnsonmitchelld.com/2021/03/14/least-squares-gps.html">website</a> that we were refrenced to use 
-and its corisponding <a href="https://www.johnsonmitchelld.com/2021/03/14/least-squares-gps.html">github</a> account.
-<br>We used the code mentioned above to procces the raw data into a dataframe and get information about the satalights and their locations.
+and its corisponding <a href="https://github.com/johnsonmitchelld/gnss-analysis">github</a> account.
+<br>We used the code mentioned above to procces the raw data into a dataframe and get information about the satellites and their locations.
 <br>Than we exported that data to a csv file, so that our code would work if we are also given this csv file.
 <br>Next, we read the csv file and wrote our own code to enteratively find the location from where the logs were taken.
 <br>After that we retured two files:
-<br>The first is a csv with important raw data about the satalites and the location of were the logs were taken.
-<br>The second is a kml file with the one location per second.
+<br>The first is a csv with important raw data about the satellites and the location of were the logs were taken.
+<br>The second is a kml file with one location point per second.
 
-For our code to run in the secound part we need to get a csv file with the following columns:
+For our code to run in the second part we need to get a csv file with the following columns:
 <br> **sat_name, UnixTime, GpsTimeNanos, tTxSeconds, Cn0DbHz, PrM, delT_sv, Epoch, x_sat, y_sat, z_sat** 
 
 The final csv has all of the above columns and pos_x, pos_y, pos_z, lat, lon, alt
@@ -96,8 +96,8 @@ The script will generate two output files in the same directory as the input fil
 - \<filename>.kml: This KML file is a visualization of the calculated positions as a path. You can open this file with Google Earth or any other KML reader
 
 ### How to view the kml file
-One way is by using Google <a href="https://www.google.com/maps/d/">MyMaps</a> whish is part of google maps.
-<br>Click on Create a new map.
+One way is by using Google <a href="https://www.google.com/maps/d/">MyMaps</a> which is part of google maps.
+<br>Click on create a new map.
 <br>Click on import and browse, to choose the load the file.
 
 ### Output exaples:
