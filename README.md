@@ -8,10 +8,11 @@ To download the app go to Google Play Store or Apple Store.
 
 To run our code do the following:
 
-gitclone "" fill in later
+gitclone https://github.com/naomital/Ex0-GNSSRawMesurment
 <br> run the following to make sure you have all the libraries needed
 <br> pip install -r /path/to/requirements.txt 
-to run:
+<br>
+<br>to run:
 <br> open the file "rawMeasurmentToGPS" 
 <br> in the main function fill in the filename to the log file you want
 
@@ -43,5 +44,5 @@ One way i by using <a href="https://www.google.com/maps/d/">mymaps</a> whish is 
 
 
 Here are images of the locations from some of the log files that we used.
-![Alt text](image link)
+
  
