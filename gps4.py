@@ -262,18 +262,28 @@ def find_earth_location_all(csv_file_name):
     kml = simplekml.Kml()
     for row, col in short.iterrows():
         kml.newpoint(name=str(row), coords=[(col['lon'], col['lat'])])
+    kml_file_name = csv_file_name.split('.')[0]
+    if '_mid_point' in kml_file_name:
+        kml_file_name = kml_file_name.replace('_mid_point', '')
+    kml_file_name += '.kml'
+    kml.save(kml_file_name)
 
-    kml.save("Ariel_try1.kml")
-    df_ans.to_csv(csv_file_name.split('.')[0] + "_answer.csv", index=False)
+
+    new_csv_file_name = csv_file_name.split('.')[0]
+    if '_mid_point' in new_csv_file_name:
+        new_csv_file_name = new_csv_file_name.replace('_mid_point', '')
+    new_csv_file_name+='_answer.csv'
+
+    df_ans.to_csv(new_csv_file_name, index=False)
 
 
 def main():
-    # filename = "driving/gnss_log_2024_04_13_19_53_33.txt"
+    filename = "driving/gnss_log_2024_04_13_19_53_33.txt"
     # filename = "seattle/gnss_log_2020_12_02_17_19_39.txt"
     # filename = 'walking/gnss_log_2024_04_13_19_52_00.txt'
     # filename = 'Ariel/gnss_log_2024_05_07_23_54_09.txt'
     # filename = 'Ariel/gnss_log_2024_05_05_17_47_43.txt'
-    filename = 'Ariel/gnss_log_2024_04_13_19_52_00.txt'
+    # filename = 'Ariel/gnss_log_2024_04_13_19_52_00.txt'
     # f = 'fixed/gnss_log_2024_04_13_19_51_17.txt'
     data = get_measurements(filename)
     csv_file_name = find_sat_location(filename.split('.')[0], data)
